@@ -1,4 +1,5 @@
-import axios from axios;
+import axios from 'axios';
+import { OPEN_WEATHER_API_KEY } from '@env';
 
 const OPEN_WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather';
 
@@ -8,7 +9,7 @@ export const getWeatherData = async (latitude: number, longitude: number) => {
             params: {
                 lat: latitude,
                 lon: longitude,
-                appid: process.env.OPEN_WEATHER_API_KEY,
+                appid: OPEN_WEATHER_API_KEY,
                 units: 'imperial',
             },
         });
