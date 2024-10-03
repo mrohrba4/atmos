@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Animated } from 'react-native';
 import { getDeviceLocation } from '../services/locationService';
 import { getWeatherData } from '../services/weatherService';
+import { Video, ResizeMode } from 'expo-av';
+
+
 
 const WeatherScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [weatherData, setWeatherData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [weatherType, setWeatherType] = useState<string | null>(null);
+
+    const fadeAnim = useState(new Animated.Value(0))[0];
+    const fontSizeAnim = useState(new Animated.Value(24))[0];
 
     useEffect (() => {
         const fetchWeather = async () => {
@@ -14,6 +21,10 @@ const WeatherScreen: React.FC = () => {
                 const location = await getDeviceLocation();
                 const data = await getWeatherData(location.latitude, location.longitude);
                 setWeatherData(data);
+
+                const weatherMain = data.weather[0].main;
+                console.log('Weather Main:', weatherMain);
+                setWeatherType(weatherMain);
             } catch (error) {
                 setError('Failed to fetch weather data');
             } finally {
@@ -23,6 +34,23 @@ const WeatherScreen: React.FC = () => {
 
         fetchWeather();
     }, []);
+
+    useEffect(() => {
+        if (!loading && weatherData) {
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 1, // Fully visible
+                    duration: 2000, // 2 seconds fade-in
+                    useNativeDriver: true,
+                }),
+                Animated.timing(fontSizeAnim, {
+                    toValue: 32, // Increase font size to 32
+                    duration: 2000, // 2 seconds font-size transition
+                    useNativeDriver: false, // Font size animation doesn't support native driver
+                }),
+            ]).start();
+        }
+    }, [loading, weatherData]);
 
     if (loading) {
         return <ActivityIndicator size="large" color="#0000ff" />;
@@ -35,16 +63,26 @@ const WeatherScreen: React.FC = () => {
             </View>
           );
     }
+
+    const videoSource = getVideoSource(weatherType);
 return (
         <View style={styles.centered}>
-            <Text style={styles.title}>Current Weather</Text>
+            <Video 
+                        source={videoSource}
+                        style={styles.backgroundVideo}
+                        resizeMode={ResizeMode.COVER}
+                        isLooping
+                        shouldPlay
+                    />   
+            <Animated.Text style={[styles.title, { opacity: fadeAnim }]}>Current Weather</Animated.Text>
             {weatherData && (
                 <View>
-                    <Text style={styles.text}>
+                     
+                    <Animated.Text style={[styles.text, { opacity: fadeAnim }]}>
                         {weatherData.name} - {weatherData.weather[0].description}
-                    </Text>
-                    <Text style={styles.text}>Temperature: {weatherData.main.temp}℉</Text>
-                    <Text style={styles.text}>Humidity: {weatherData.main.humidity}%</Text>
+                    </Animated.Text>
+                    <Animated.Text style={[styles.text, { opacity: fadeAnim }]}>Temperature: {weatherData.main.temp}℉</Animated.Text>
+                    <Animated.Text style={[styles.text, { opacity: fadeAnim }]}>Humidity: {weatherData.main.humidity}%</Animated.Text>
                 </View>
             )}
         </View>
@@ -57,17 +95,25 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       backgroundColor: '#1a1a1a',
     },
+    backgroundVideo: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+    },
     centered: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
     title: {
-      fontSize: 24,
+      fontSize: 34,  
       color: '#fff',
+      textDecorationLine: 'underline',
     },
     text: {
-      fontSize: 18,
+      fontSize: 24,  
       color: '#fff',
       marginVertical: 5,
     },
@@ -76,5 +122,14 @@ const styles = StyleSheet.create({
       fontSize: 18,
     },
   });
+
+  const getVideoSource = (weatherType: string | null) => {
+    switch (weatherType) {
+        case 'Clear':
+            return require('./../assets/videos/clearsky.mp4');
+        default:
+            return null;
+    }
+  };
   
   export default WeatherScreen;
