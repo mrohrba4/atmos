@@ -127,6 +127,10 @@ const styles = StyleSheet.create({
     switch (weatherType) {
         case 'Clear':
             return require('./../assets/videos/clearsky.mp4');
+        case 'Clouds':
+            return require('./../assets/videos/partlycloudy.mp4');
+        case 'Rain':
+            return require('./../assets/videos/lightrain.mp4');
         default:
             return null;
     }
